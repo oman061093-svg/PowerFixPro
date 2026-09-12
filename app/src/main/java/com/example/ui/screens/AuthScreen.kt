@@ -380,8 +380,8 @@ fun AuthScreen(
                         ) {
                             Text("Verify OTP & Log In", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                         }
-                    }*/
-                }
+                    }
+                }*/
 
                 1 -> {
                     // --- CUSTOMER SIGN UP ---
@@ -543,8 +543,8 @@ fun AuthScreen(
                                         Text("Auto Fill", fontSize = 12.sp)
                                     }
                                 }
+                        
                         */
-                        }
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
