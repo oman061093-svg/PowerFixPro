@@ -198,7 +198,7 @@ fun AuthScreen(
             when (authMode) {
                 0 -> {
                     // --- CUSTOMER LOGIN ---
-                    Row(
+                  /*  Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
@@ -218,7 +218,7 @@ fun AuthScreen(
                                 fontSize = 12.sp
                             )
                         }
-                    }
+                    }*/
 
                     OutlinedTextField(
                         value = email,
@@ -236,7 +236,7 @@ fun AuthScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    if (!customerUseOtp) {
+                    
                         OutlinedTextField(
                             value = password,
                             onValueChange = { password = it; errorMessage = null },
@@ -291,7 +291,7 @@ fun AuthScreen(
                         ) {
                             Text("Log In as Customer", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                         }
-                    } else {
+                    } /*else {
                         // Customer Email OTP flow
                         if (generatedOtpNotice != null) {
                             Surface(
@@ -380,7 +380,7 @@ fun AuthScreen(
                         ) {
                             Text("Verify OTP & Log In", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                         }
-                    }
+                    }*/
                 }
 
                 1 -> {
@@ -509,7 +509,7 @@ fun AuthScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    if (generatedOtpNotice != null) {
+                  /*  if (generatedOtpNotice != null) {
                         Surface(
                             color = MaterialTheme.colorScheme.primaryContainer,
                             shape = RoundedCornerShape(10.dp),
@@ -543,7 +543,7 @@ fun AuthScreen(
                                         Text("Auto Fill", fontSize = 12.sp)
                                     }
                                 }
-                            }
+                        */
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                     }
@@ -589,9 +589,16 @@ fun AuthScreen(
                             if (email.isBlank() || otpCode.isBlank()) {
                                 errorMessage = "Please enter admin email and OTP."
                             } else {
-                                viewModel.verifyEmailOtp(email, otpCode) { success, err ->
-                                    if (!success) errorMessage = err
-                                }
+    if (otpCode == "051095") {
+        errorMessage = null
+        viewModel.verifyEmailOtp(email, "051095") { success, err ->
+            if (!success) errorMessage = err
+        }
+    } else {
+        errorMessage = "Invalid Admin PIN. Please try again."
+    }
+}
+
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = AmberDark),
