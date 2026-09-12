@@ -562,7 +562,7 @@ fun AuthScreen(
                             singleLine = true
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        FilledTonalButton(
+ /*                       FilledTonalButton(
                             onClick = {
                                 if (email.isBlank()) {
                                     errorMessage = "Enter admin email to generate OTP."
@@ -580,7 +580,7 @@ fun AuthScreen(
                         ) {
                             Text("Send OTP")
                         }
-                    }
+                    }*/
 
                     Spacer(modifier = Modifier.height(18.dp))
 
