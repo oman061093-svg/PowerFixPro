@@ -1,4 +1,4 @@
-package com.example.ui.screens
+    package com.example.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,7 +9,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Pin
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,643 +23,283 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.AmberDark
-import com.example.ui.theme.AmberPrimary
-import com.example.ui.theme.ElectricBlue
-import com.example.viewmodel.ElectricViewModel
+import com.example.ui.viewmodels.AuthViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(
-    viewModel: ElectricViewModel,
-    modifier: Modifier = Modifier
+    viewModel: AuthViewModel,
+    onLoginSuccess: (isAdmin: Boolean) -> Unit
 ) {
-    var authMode by remember { mutableIntStateOf(0) } // 0: Customer Login, 1: Customer Sign Up, 2: Admin OTP
+    var isAdminMode by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var customerName by remember { mutableStateOf("") }
+    var isSignUp by remember { mutableStateOf(false) }
     var otpCode by remember { mutableStateOf("") }
-    var generatedOtpNotice by remember { mutableStateOf<String?>(null) }
-    var isPasswordVisible by remember { mutableStateOf(false) }
-    var customerUseOtp by remember { mutableStateOf(false) }
-
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var successMessage by remember { mutableStateOf<String?>(null) }
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
     var resetEmail by remember { mutableStateOf("") }
+    var resetEmailSent by remember { mutableStateOf(false) }
 
-    val scrollState = rememberScrollState()
-
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            // App Title / Header
+            Text(
+                text = if (isAdminMode) "Admin Portal" else "PowerFix Pro",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // App Brand Logo & Name
-            Box(
+            // Mode Switcher Tab
+            Row(
                 modifier = Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(AmberPrimary),
-                contentAlignment = Alignment.Center
+                    .clip(RoundedCornerShape(25.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(4.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.ElectricBolt,
-                    contentDescription = "App Logo",
-                    tint = Color.Black,
-                    modifier = Modifier.size(44.dp)
+                TabButton(
+                    text = "Customer",
+                    selected = !isAdminMode,
+                    onClick = { 
+                        isAdminMode = false
+                        errorMessage = null 
+                    }
+                )
+                TabButton(
+                    text = "Admin",
+                    selected = isAdminMode,
+                    onClick = { 
+                        isAdminMode = true
+                        errorMessage = null 
+                    }
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
-            Text(
-                text = "PowerFixPro",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = "On-Demand Certified Electricians & 24/7 Emergency",
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.outline,
-                textAlign = TextAlign.Center
-            )
+            Spacer(modifier = Modifier.height(32.dp))
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Primary Auth Selector Tabs
-            PrimaryTabRow(
-                selectedTabIndex = authMode,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp)),
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 4.dp
             ) {
-                Tab(
-                    selected = authMode == 0,
-                    onClick = {
-                        authMode = 0
-                        errorMessage = null
-                        successMessage = null
-                    },
-                    modifier = Modifier.testTag("tab_customer_login"),
-                    text = { Text("Customer", fontWeight = FontWeight.SemiBold, fontSize = 13.sp) }
-                )
-                Tab(
-                    selected = authMode == 1,
-                    onClick = {
-                        authMode = 1
-                        errorMessage = null
-                        successMessage = null
-                    },
-                    modifier = Modifier.testTag("tab_customer_signup"),
-                    text = { Text("Sign Up", fontWeight = FontWeight.SemiBold, fontSize = 13.sp) }
-                )
-                Tab(
-                    selected = authMode == 2,
-                    onClick = {
-                        authMode = 2
-                        email = "oman061093@gmail.com"
-                        errorMessage = null
-                        successMessage = null
-                    },
-                    modifier = Modifier.testTag("tab_admin_otp"),
-                    text = { Text("Admin (OTP)", fontWeight = FontWeight.SemiBold, fontSize = 13.sp) }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Error or Success Banner
-            if (errorMessage != null) {
-                Surface(
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Error,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
+                    if (errorMessage != null) {
                         Text(
-                            text = errorMessage ?: "",
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            fontSize = 12.sp
+                            text = errorMessage!!,
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(bottom = 16.dp)
                         )
                     }
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-            }
 
-            if (successMessage != null) {
-                Surface(
-                    color = Color(0xFFD1FAE5),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = Color(0xFF059669),
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = successMessage ?: "",
-                            color = Color(0xFF065F46),
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
-            // Auth Forms based on tab
-            when (authMode) {
-                0 -> {
-                    // --- CUSTOMER LOGIN ---
-                  /*  Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = if (customerUseOtp) "Login with Email OTP" else "Login with Password",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        TextButton(
-                            onClick = { customerUseOtp = !customerUseOtp },
-                            modifier = Modifier.testTag("toggle_login_otp_button")
-                        ) {
-                            Text(
-                                text = if (customerUseOtp) "Use Password instead" else "Use Email OTP instead",
-                                fontSize = 12.sp
+                    if (!isAdminMode) {
+                        // --- CUSTOMER FLOW (No OTP) ---
+                        if (isSignUp) {
+                            OutlinedTextField(
+                                value = customerName,
+                                onValueChange = { customerName = it },
+                                label = { Text("Full Name") },
+                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                                modifier = Modifier.fillMaxWidth().testTag("customer_name_input"),
+                                singleLine = true
                             )
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
-                    }*/
 
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it; errorMessage = null },
-                        label = { Text("Customer Email") },
-                        placeholder = { Text("customer@example.com") },
-                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("customer_login_email_input"),
-                        shape = RoundedCornerShape(10.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    
                         OutlinedTextField(
-                            value = password,
-                            onValueChange = { password = it; errorMessage = null },
-                            label = { Text("Password") },
-                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                            trailingIcon = {
-                                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                                    Icon(
-                                        imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                        contentDescription = "Toggle password"
-                                    )
-                                }
-                            },
-                            visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("customer_login_password_input"),
-                            shape = RoundedCornerShape(10.dp),
+                            value = email,
+                            onValueChange = { email = it },
+                            label = { Text("Email Address") },
+                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            modifier = Modifier.fillMaxWidth().testTag("customer_email_input"),
                             singleLine = true
                         )
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            TextButton(
-                                onClick = {
-                                    resetEmail = email.trim()
-                                    showForgotPasswordDialog = true
-                                },
-                                modifier = Modifier.testTag("forgot_password_button")
-                            ) {
-                                Text("Forgot Password?", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
-                            }
-                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Password") },
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                            visualTransformation = PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            modifier = Modifier.fillMaxWidth().testTag("customer_password_input"),
+                            singleLine = true
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
 
                         Button(
                             onClick = {
                                 if (email.isBlank() || password.isBlank()) {
-                                    errorMessage = "Please enter email and password."
+                                    errorMessage = "Please fill in all fields"
                                 } else {
-                                    viewModel.signIn(email, password) { success, err ->
-                                        if (!success) errorMessage = err
+                                    errorMessage = null
+                                    if (isSignUp) {
+                                        viewModel.signUpCustomer(email, password, customerName) { success, err ->
+                                            if (success) onLoginSuccess(false)
+                                            else errorMessage = err ?: "Sign up failed"
+                                        }
+                                    } else {
+                                        viewModel.loginCustomer(email, password) { success, err ->
+                                            if (success) onLoginSuccess(false)
+                                            else errorMessage = err ?: "Login failed"
+                                        }
                                     }
                                 }
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp)
-                                .testTag("customer_login_submit_button"),
-                            shape = RoundedCornerShape(10.dp)
+                            modifier = Modifier.fillMaxWidth().height(50.dp).testTag("customer_login_button")
                         ) {
-                            Text("Log In as Customer", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                        }
-                    } /*else {
-                        // Customer Email OTP flow
-                        if (generatedOtpNotice != null) {
-                            Surface(
-                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(10.dp)) {
-                                    Text(
-                                        text = "Generated OTP for $email:",
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(
-                                            text = generatedOtpNotice ?: "",
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            letterSpacing = 4.sp
-                                        )
-                                        TextButton(onClick = { otpCode = generatedOtpNotice ?: "" }) {
-                                            Text("Auto Fill")
-                                        }
-                                    }
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(if (isSignUp) "Register" else "Log In")
                         }
 
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            OutlinedTextField(
-                                value = otpCode,
-                                onValueChange = { otpCode = it; errorMessage = null },
-                                label = { Text("6-Digit OTP") },
-                                leadingIcon = { Icon(Icons.Default.Pin, contentDescription = null) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("customer_otp_input"),
-                                shape = RoundedCornerShape(10.dp),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            FilledTonalButton(
-                                onClick = {
-                                    if (email.isBlank()) {
-                                        errorMessage = "Enter your email first to receive OTP."
-                                    } else {
-                                        viewModel.sendEmailOtp(email) { code ->
-                                            generatedOtpNotice = code
-                                            successMessage = "OTP dispatched to $email!"
-                                        }
-                                    }
-                                },
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier
-                                    .height(56.dp)
-                                    .testTag("customer_send_otp_button")
-                            ) {
-                                Text("Get OTP")
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        TextButton(onClick = { isSignUp = !isSignUp }) {
+                            Text(if (isSignUp) "Already have an account? Log In" else "Don't have an account? Sign Up")
+                        }
+
+                        if (!isSignUp) {
+                            TextButton(onClick = { showForgotPasswordDialog = true }) {
+                                Text("Forgot Password?")
                             }
                         }
+
+                    } else {
+                        // --- ADMIN FLOW (Email + Secret PIN: 051095, No OTP) ---
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            label = { Text("Admin Email") },
+                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            modifier = Modifier.fillMaxWidth().testTag("admin_email_input"),
+                            singleLine = true
+                        )
 
                         Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedTextField(
+                            value = otpCode,
+                            onValueChange = { otpCode = it },
+                            label = { Text("Admin Secret PIN") },
+                            leadingIcon = { Icon(Icons.Default.Pin, contentDescription = null) },
+                            visualTransformation = PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth().testTag("admin_pin_input"),
+                            singleLine = true
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
 
                         Button(
                             onClick = {
                                 if (email.isBlank() || otpCode.isBlank()) {
-                                    errorMessage = "Please enter email and verification OTP."
-                                } else {
-                                    viewModel.verifyEmailOtp(email, otpCode) { success, err ->
-                                        if (!success) errorMessage = err
+                                    errorMessage = "Please enter admin email and PIN"
+                                } else if (otpCode == "051095") {
+                                    errorMessage = null
+                                    viewModel.loginAdmin(email) { success, err ->
+                                        if (success) onLoginSuccess(true)
+                                        else errorMessage = err ?: "Admin login failed"
                                     }
+                                } else {
+                                    errorMessage = "Invalid Admin PIN"
                                 }
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp)
-                                .testTag("customer_otp_verify_button"),
-                            shape = RoundedCornerShape(10.dp)
+                            modifier = Modifier.fillMaxWidth().height(50.dp).testTag("admin_login_button"),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                         ) {
-                            Text("Verify OTP & Log In", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Text("Admin Log In")
                         }
-                    }
-                }*/
-
-                1 -> {
-                    // --- CUSTOMER SIGN UP ---
-                    OutlinedTextField(
-                        value = customerName,
-                        onValueChange = { customerName = it },
-                        label = { Text("Full Name") },
-                        placeholder = { Text("e.g. John Sharma") },
-                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("customer_signup_name_input"),
-                        shape = RoundedCornerShape(10.dp),
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it; errorMessage = null },
-                        label = { Text("Email Address") },
-                        placeholder = { Text("name@domain.com") },
-                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("customer_signup_email_input"),
-                        shape = RoundedCornerShape(10.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it; errorMessage = null },
-                        label = { Text("Create Password") },
-                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                        trailingIcon = {
-                            IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                                Icon(
-                                    imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                    contentDescription = "Toggle password"
-                                )
-                            }
-                        },
-                        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("customer_signup_password_input"),
-                        shape = RoundedCornerShape(10.dp),
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Button(
-                        onClick = {
-                            if (email.isBlank() || password.length < 6) {
-                                errorMessage = "Provide a valid email and at least 6-character password."
-                            } else {
-                                viewModel.signUp(email, password, customerName) { success, err ->
-                                    if (!success) errorMessage = err
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                            .testTag("customer_signup_submit_button"),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text("Create Customer Account", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     }
                 }
+            }
+        }
+    }
 
-                2 -> {
-                    // --- ADMIN OTP / MAGIC LINK PORTAL ---
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.AdminPanelSettings,
-                                contentDescription = null,
-                                tint = AmberDark,
-                                modifier = Modifier.size(28.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "Dedicated Admin Authentication",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
-                                )
-                                Text(
-                                    text = "Admin must authenticate exclusively via Email OTP / Magic Link.",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.outline
-                                )
+    // Forgot Password Dialog
+    if (showForgotPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showForgotPasswordDialog = false },
+            title = { Text("Reset Password") },
+            text = {
+                Column {
+                    Text("Enter your email address to receive a password reset link.")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = resetEmail,
+                        onValueChange = { resetEmail = it },
+                        label = { Text("Email") },
+                        singleLine = true
+                    )
+                    if (resetEmailSent) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Reset link sent to your email!", color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (resetEmail.isNotBlank()) {
+                            viewModel.sendPasswordReset(resetEmail) {
+                                resetEmailSent = true
                             }
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it; errorMessage = null },
-                        label = { Text("Dedicated Admin Email") },
-                        leadingIcon = { Icon(Icons.Default.Badge, contentDescription = null) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("admin_email_input"),
-                        shape = RoundedCornerShape(10.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                  
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        OutlinedTextField(
-                            value = otpCode,
-                            onValueChange = { otpCode = it; errorMessage = null },
-                            label = { Text("Admin 6-Digit OTP") },
-                            leadingIcon = { Icon(Icons.Default.Pin, contentDescription = null) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .testTag("admin_otp_input"),
-                            shape = RoundedCornerShape(10.dp),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-
-
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    Button(
-                        onClick = {
-                            if (email.isBlank() || otpCode.isBlank()) {
-                                errorMessage = "Please enter admin email and OTP."
-                            } else {
-    if (otpCode == "051095") {
-        errorMessage = null
-        viewModel.verifyEmailOtp(email, "051095") { success, err ->
-            if (!success) errorMessage = err
-        }
-    } else {
-        errorMessage = "Invalid Admin PIN. Please try again."
+                ) {
+                    Text("Send Reset Link")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { 
+                    showForgotPasswordDialog = false
+                    resetEmailSent = false
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = AmberDark),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                            .testTag("admin_verify_otp_button"),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(Icons.Default.Security, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Verify OTP & Open Admin Center", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // Quick Demo Switcher Section
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            Spacer(modifier = Modifier.height(14.dp))
-            Text(
-                text = "FAST-TRACK DEMO ACCOUNTS",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.outline,
-                letterSpacing = 1.sp
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                OutlinedButton(
-                    onClick = { viewModel.quickSwitchToCustomer() },
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("demo_customer_button"),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Customer", fontSize = 12.sp)
-                }
-
-                Button(
-                    onClick = { viewModel.quickSwitchToAdmin() },
-                    colors = ButtonDefaults.buttonColors(containerColor = AmberPrimary, contentColor = Color.Black),
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("demo_admin_button"),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Icon(Icons.Default.AdminPanelSettings, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Admin Center", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-        }
-
-        // Forgot Password Dialog
-        if (showForgotPasswordDialog) {
-            AlertDialog(
-                onDismissRequest = { showForgotPasswordDialog = false },
-                title = { Text("Reset Password", fontWeight = FontWeight.Bold) },
-                text = {
-                    Column {
-                        Text(
-                            text = "Enter your registered email address. Firebase Auth will dispatch a secure password reset link to your inbox.",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedTextField(
-                            value = resetEmail,
-                            onValueChange = { resetEmail = it },
-                            label = { Text("Account Email") },
-                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("forgot_password_email_input"),
-                            shape = RoundedCornerShape(8.dp),
-                            singleLine = true
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            if (resetEmail.isNotBlank()) {
-                                viewModel.sendPasswordReset(resetEmail) { _, msg ->
-                                    successMessage = msg
-                                    showForgotPasswordDialog = false
-                                }
-                            }
-                        },
-                        modifier = Modifier.testTag("send_reset_link_button")
-                    ) {
-                        Text("Send Reset Link")
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = { showForgotPasswordDialog = false },
-                        modifier = Modifier.testTag("cancel_reset_button")
-                    ) {
-                        Text("Cancel")
-                    }
-                }
-      )      
-        }
+@Composable
+fun TabButton(text: String, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 24.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+                       
