@@ -1,48 +1,16 @@
-package com.example
+package com.example.ui
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.ui.screens.*
-import com.example.ui.theme.AmberDark
-import com.example.ui.theme.MyApplicationTheme
-import com.example.viewmodel.AppDestination
-import com.example.viewmodel.ElectricViewModel
-
-class MainActivity : ComponentActivity() {
-
-    private val viewModel: ElectricViewModel by viewModels()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-
-        setContent {
-            MyApplicationTheme {
-                MainAppContent(viewModel = viewModel)
-            }
-        }
-    }
-}
+import com.example.ui.viewmodels.ElectricViewModel
 
 @Composable
 fun MainAppContent(viewModel: ElectricViewModel) {
-    val destination by viewModel.currentDestination.collectAsState()
-    val currentUser by viewModel.currentUser.collectAsState()
+    val destination by viewModel.currentDestination
+    val currentUser by viewModel.currentUser
 
     val isCustomerScreen = destination is AppDestination.CustomerHome ||
             destination is AppDestination.CustomerBooking ||
@@ -64,29 +32,25 @@ fun MainAppContent(viewModel: ElectricViewModel) {
                         selected = destination is AppDestination.CustomerHome,
                         onClick = { viewModel.navigateTo(AppDestination.CustomerHome) },
                         icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                        label = { Text("Home", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
-                        modifier = Modifier.testTag("nav_item_home")
+                        label = { Text("Home") }
                     )
                     NavigationBarItem(
                         selected = destination is AppDestination.CustomerBooking,
-                        onClick = { viewModel.navigateTo(AppDestination.CustomerBooking()) },
-                        icon = { Icon(Icons.Default.ElectricBolt, contentDescription = "Book") },
-                        label = { Text("Book", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
-                        modifier = Modifier.testTag("nav_item_book")
+                        onClick = { viewModel.navigateTo(AppDestination.CustomerBooking) },
+                        icon = { Icon(Icons.Default.DateRange, contentDescription = "Bookings") },
+                        label = { Text("Bookings") }
                     )
                     NavigationBarItem(
                         selected = destination is AppDestination.CustomerTracking,
                         onClick = { viewModel.navigateTo(AppDestination.CustomerTracking) },
-                        icon = { Icon(Icons.Default.Schedule, contentDescription = "Track") },
-                        label = { Text("Track", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
-                        modifier = Modifier.testTag("nav_item_track")
+                        icon = { Icon(Icons.Default.LocationOn, contentDescription = "Tracking") },
+                        label = { Text("Tracking") }
                     )
                     NavigationBarItem(
                         selected = destination is AppDestination.CustomerProfile,
                         onClick = { viewModel.navigateTo(AppDestination.CustomerProfile) },
                         icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
-                        label = { Text("Profile", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
-                        modifier = Modifier.testTag("nav_item_profile")
+                        label = { Text("Profile") }
                     )
                 }
             } else if (isAdminScreen && currentUser != null) {
@@ -97,23 +61,14 @@ fun MainAppContent(viewModel: ElectricViewModel) {
                     NavigationBarItem(
                         selected = destination is AppDestination.AdminDashboard,
                         onClick = { viewModel.navigateTo(AppDestination.AdminDashboard) },
-                        icon = { Icon(Icons.Default.Assignment, contentDescription = "Bookings") },
-                        label = { Text("Bookings", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        modifier = Modifier.testTag("admin_nav_bookings")
+                        icon = { Icon(Icons.Default.Dashboard, contentDescription = "Dashboard") },
+                        label = { Text("Dashboard") }
                     )
                     NavigationBarItem(
                         selected = destination is AppDestination.AdminCms,
                         onClick = { viewModel.navigateTo(AppDestination.AdminCms) },
-                        icon = { Icon(Icons.Default.Tune, contentDescription = "CMS Studio") },
-                        label = { Text("CMS Studio", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        modifier = Modifier.testTag("admin_nav_cms")
-                    )
-                    NavigationBarItem(
-                        selected = false,
-                        onClick = { viewModel.navigateTo(AppDestination.CustomerHome) },
-                        icon = { Icon(Icons.Default.Visibility, contentDescription = "Preview Customer App") },
-                        label = { Text("Customer View", fontSize = 11.sp) },
-                        modifier = Modifier.testTag("admin_nav_customer_view")
+                        icon = { Icon(Icons.Default.Edit, contentDescription = "CMS") },
+                        label = { Text("CMS") }
                     )
                 }
             }
@@ -127,7 +82,16 @@ fun MainAppContent(viewModel: ElectricViewModel) {
         ) {
             when (val dest = destination) {
                 is AppDestination.Auth -> {
-                    AuthScreen(viewModel = viewModel)
+                    AuthScreen(
+                        viewModel = viewModel,
+                        onLoginSuccess = { isAdmin ->
+                            if (isAdmin) {
+                                viewModel.navigateTo(AppDestination.AdminDashboard)
+                            } else {
+                                viewModel.navigateTo(AppDestination.CustomerHome)
+                            }
+                        }
+                    )
                 }
                 is AppDestination.CustomerHome -> {
                     CustomerHomeScreen(viewModel = viewModel)
@@ -135,7 +99,7 @@ fun MainAppContent(viewModel: ElectricViewModel) {
                 is AppDestination.CustomerBooking -> {
                     CustomerBookingScreen(
                         viewModel = viewModel,
-                        preselectedServiceId = dest.serviceId,
+                        preselectedService = dest.preselectedService,
                         initialEmergency = dest.initialEmergency
                     )
                 }
@@ -150,6 +114,9 @@ fun MainAppContent(viewModel: ElectricViewModel) {
                 }
                 is AppDestination.AdminCms -> {
                     AdminCmsScreen(viewModel = viewModel)
+                }
+                else -> {
+                    // Fallback
                 }
             }
         }
