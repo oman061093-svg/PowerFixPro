@@ -1,0 +1,6 @@
+{
+  "name": "PowerFixPro",
+  "description": "On-demand electric repairing service app with instant booking, emergency advance payment, YouTube repair tutorials, real-time status tracking, and admin CMS control center.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

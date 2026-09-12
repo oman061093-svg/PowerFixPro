@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.email == "oman061093@gmail.com" || 
+         request.auth.token.email == "oman61093@gmail.com");
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // User profile documents
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Services catalog
+    match /services/{serviceId} {
+      allow read: if true; // Publicly viewable catalog
+      allow write: if isAdmin();
+    }
+    
+    // App Settings (YouTube links, admin QR code, support directory)
+    match /app_settings/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Bookings collection
+    match /bookings/{bookingId} {
+      // Customer can read their own bookings. Admin can read all bookings.
+      // Phone number privacy rule: When read by non-admins and non-owners, or when status is unconfirmed,
+      // the phone number is restricted.
+      allow read: if isAuthenticated() && (isOwner(resource.data.user_id) || isAdmin());
+      
+      // Customers can create bookings for themselves
+      allow create: if isAuthenticated() && 
+        request.resource.data.user_id == request.auth.uid &&
+        request.resource.data.status == "Pending";
+        
+      // Customers can submit feedback once completed, Admin can change status & manage bookings
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        (isOwner(resource.data.user_id) && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['feedback', 'payment_proof_url', 'payment_status']))
+      );
+      
+      allow delete: if isAdmin();
+    }
+  }
+}
