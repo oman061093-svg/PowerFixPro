@@ -658,4 +658,5 @@ fun AuthScreen(
                         Text("Cancel")
                     }
                 }
-            
+      )      
+        }
