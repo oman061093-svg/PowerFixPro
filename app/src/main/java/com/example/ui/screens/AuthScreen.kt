@@ -509,42 +509,7 @@ fun AuthScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                  /*  if (generatedOtpNotice != null) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(14.dp)) {
-                                Text(
-                                    text = "🔐 Admin Magic OTP Code for $email:",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(
-                                        text = generatedOtpNotice ?: "",
-                                        fontSize = 24.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = AmberDark,
-                                        letterSpacing = 4.sp
-                                    )
-                                    Button(
-                                        onClick = { otpCode = generatedOtpNotice ?: "" },
-                                        shape = RoundedCornerShape(8.dp),
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                                        modifier = Modifier.testTag("admin_autofill_otp_button")
-                                    ) {
-                                        Text("Auto Fill", fontSize = 12.sp)
-                                    }
-                                }
-                        
-                        */
+                  
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
@@ -562,25 +527,7 @@ fun AuthScreen(
                             singleLine = true
                         )
                         Spacer(modifier = Modifier.width(8.dp))
- /*                       FilledTonalButton(
-                            onClick = {
-                                if (email.isBlank()) {
-                                    errorMessage = "Enter admin email to generate OTP."
-                                } else {
-                                    viewModel.sendEmailOtp(email) { code ->
-                                        generatedOtpNotice = code
-                                        successMessage = "Magic OTP generated for admin verification!"
-                                    }
-                                }
-                            },
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier
-                                .height(56.dp)
-                                .testTag("admin_send_otp_button")
-                        ) {
-                            Text("Send OTP")
-                        }
-                    }*/
+
 
                     Spacer(modifier = Modifier.height(18.dp))
 
